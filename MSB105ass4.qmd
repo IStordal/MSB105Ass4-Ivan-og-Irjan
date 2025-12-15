@@ -217,4 +217,7 @@ pop <- get_eurostat_data(
 dim(pop)
 ```
 
+```{r}
+pop
+```
 
