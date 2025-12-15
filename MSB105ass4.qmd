@@ -221,3 +221,5 @@ dim(pop)
 pop
 ```
 
+# Oppgave 3
+
