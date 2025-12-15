@@ -152,5 +152,30 @@ gdp |>
   print(n = 25)
 ```
 
-# Oppgave
+# Oppgave 1
+
+```{r}
+# Finne tabeller med population + NUTS 3 i Eurostat TOC
+
+pop_tabs <- toc_txt |>
+  filter(
+    str_detect(title, pattern = "[Pp]opulation") &
+      str_detect(title, pattern = "[Nn][Uu][Tt][Ss]\\s*3")
+  ) |>
+  select(title, code)
+
+pop_tabs |>
+  flextable() |>
+  width(1, width = 4.5) |>
+  width(2, width = 1.5)
+
+```
+
+# Oppgave 2
+
+```{r}
+dsd_pop <- get_eurostat_dsd("demo_r_pjanaggr3")
+
+```
+
 
