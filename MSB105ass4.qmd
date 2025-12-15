@@ -152,5 +152,83 @@ gdp |>
   print(n = 25)
 ```
 
-# Oppgave
+```{r}
+pop_tabs <- toc_txt |>
+  filter(
+    str_detect(
+      title,
+      pattern = "[Pp][Oo][Pp][Uu][Ll][Aa][Tt][Ii][Oo][Nn]"
+    ) &
+    str_detect(
+      title,
+      pattern = "[Nn][Uu][Tt][Ss]\\s*3"
+    )
+  ) |>
+  select(title, code)
+```
+
+
+
+
+```{r}
+dsd_pop <- get_eurostat_dsd("demo_r_pjanaggr3")
+```
+
+
+```{r}
+dsd_pop |>
+  filter(concept %in% c("freq", "sex", "age", "unit")) |>
+  flextable()
+```
+
+
+# Oppgave 2.iii
+
+
+
+
+```{r}
+pop <- get_eurostat_data(
+  id = "demo_r_pjanaggr3",
+  filters = list(
+    sex = "T",
+    age = "TOTAL"
+  ),
+  date_filter = 2000:2023,
+  exact_match = FALSE,
+  stringsAsFactors = FALSE
+) |>
+  mutate(
+    # Verdiene er i tusen personer → konverter til personer
+    pop_n3 = 1000 * values
+  ) |>
+  select(-c(values, sex, age, unit)) |>
+  as_tibble()
+```
+
+
+
+
+
+# Oppgave 2.iv
+
+
+```{r}
+pop <- pop |>
+  filter(str_length(geo) == 5)
+```
+
+
+
+
+```{r}
+dim(pop)
+```
+
+
+```{r}
+pop
+```
+
+
 
