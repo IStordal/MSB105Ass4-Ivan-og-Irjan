@@ -24,7 +24,133 @@ echo: false
 bibliography:
 ---
 
+```{r}
+#| label: setup
+#| message: false
+library(tidyverse)
+library(readxl)
+library(restatapi)
+library(DescTools)
+library(ggrepel)
+library(flextable)
+library(modelr)
+library(plm)
+library(broom)
+library(sandwich)
+```
+
+```{r}
+toc_txt <- get_eurostat_toc(mode = "txt")
+```
+
+```{r}
+gdp_tabs <- toc_txt |> 
+   filter(
+     str_detect(
+       string = title,
+       pattern = '[Gg][Dd][Pp]'
+       ) &
+     str_detect(
+       string = title,
+       pattern = '[Nn][Uu][Tt][Ss]\\s*3'
+       )
+     ) |> 
+  select(title, code)
+```
+
+```{r}
+gdp_tabs |> 
+  select(title, code) |> 
+  flextable()  |> 
+  width(1, width = 3.5) |> 
+  width(2, width = 1.5)
+```
+
+```{r}
+# description nama_10r_3gdp
+dsd_gdp <- get_eurostat_dsd("nama_10r_3gdp")
+```
+
+```{r}
+dsd_gdp |> 
+  filter(concept %in% c('freq', 'unit')) |> 
+  flextable()  |> 
+  width(j = 1, width = 1) |> 
+  width(j = 2, width = 2) |> 
+  width(j = 3, width = 2)
+```
+
+```{r}
+dsd_gdp |> 
+  filter(concept %in% c('geo')) |> 
+  head(n = 10) |> 
+  flextable()  |> 
+  width(j = 1, width = 1) |> 
+  width(j = 2, width = 2) |> 
+  width(j = 3, width = 2)
+```
 
 
+```{r}
+#| eval: true
+#| cache: true
+gdp <- get_eurostat_data(
+  id = "nama_10r_3gdp",
+  filters = list(
+    nuts_level = "3",
+    unit = "MIO_PPS_EU27_2020"
+  ),
+  exact_match = FALSE,
+  date_filter = 2000:2023,
+  stringsAsFactors = FALSE
+  ) |> 
+  mutate(
+    gdp_n3 = 1000000 * values
+  ) |> 
+  select(-c(unit, values)) |> 
+  filter(str_length(geo) == 5) |> 
+  as_tibble()
+```
 
+```{r}
+dim(gdp)
+```
+
+```{r}
+gdp
+```
+
+```{r}
+gdp |> 
+  filter(geo == "IE053") |> 
+  print(n = 25)
+```
+
+```{r}
+ie_data <- tibble(
+  geo = c("IE053", "IE053", "IE053"),
+  time = c("2015", "2016", "2017"),
+  gdp_n3 = c(NA, NA, NA)
+)
+```
+
+```{r}
+gdp <- rbind(gdp, ie_data)
+```
+
+```{r}
+gdp <- gdp |> 
+  arrange(geo, time) |> 
+  mutate(
+    gdp_n3 = zoo::na.approx(gdp_n3)
+  )
+```
+
+```{r}
+gdp |> 
+  filter(geo == "IE053") |> 
+  print(n = 25)
+```
+
+# Oppgave
 
