@@ -223,3 +223,337 @@ pop
 
 # Oppgave 3
 
+```{r}
+gdp_pop <- left_join(
+  gdp,
+  pop,
+  by = c("geo", "time")
+)
+```
+
+```{r}
+dim(gdp_pop)
+head(gdp_pop)
+```
+
+
+```{r}
+eu_data <- gdp_pop %>%
+ # Trenger ikke ZZ sonene som er en slag oppsamlingssone
+ # for ikke fordelte verdier
+ filter(!str_sub(geo, 3, 4) == "ZZ") |>
+ # Drop the EFTA countries Switzerland and Norway
+ filter(!str_sub(geo, 1, 2) %in% c("CH", "NO")) |>
+ # Drop the EU countries Netherlands and Portugal
+ filter(!str_sub(geo, 1, 2) %in% c("NL", "PT")) |>
+ # Drop candidate country Monte Negro because of data
+ filter(!str_sub(geo, 1, 2) %in% c("ME")) |>
+ # Drop a region of France in the Indian Ocean (Outre Mer); Mayotte
+ # because of missing data
+ filter(!geo == "FRY50") |>
+ # note that a few countries will have missing data for
+ # some years at the start of the period
+ filter(time > 1999 & time < 2023)
+```
+
+```{r}
+eu_data <- eu_data |>
+  mutate(
+    gdp_pc_n3 = gdp_n3 / pop_n3
+  )
+```
+
+```{r}
+dim(eu_data)
+```
+
+```{r}
+miss_eu <- eu_data %>%
+  filter(!complete.cases(.))
+dim(miss_eu)
+```
+
+
+# Oppgave 4
+
+```{r}
+eu_data <- eu_data |>
+  rename(
+    n3 = geo
+  ) |>
+  mutate(
+    n2 = str_sub(n3, 1, 4),  # NUTS2
+    n1 = str_sub(n3, 1, 3),  # NUTS1
+    nc = str_sub(n3, 1, 2)   # Country
+  )
+
+```
+
+```{r}
+# Sjekker at det er riktig
+eu_data |>
+  select(n3, n2, n1, nc) |>
+  distinct() |>
+  head(10)
+
+```
+
+
+# Oppgave 5
+
+```{r}
+# Ingen pop_n3 som er lik 0.
+eu_data |>
+  filter(pop_n3 == 0) |>
+  select(n3, time, pop_n3)
+
+```
+
+
+# Oppgave 6
+```{r}
+eu_data |>
+  distinct(nc, n3) |>
+  count(nc, name = "num_nuts3") |>
+  arrange(nc) |> 
+  
+as_flextable()
+```
+# Oppgave 7
+
+```{r}
+# Summary viser at BNP per innbygger på NUTS3-nivå varierer fra en minimumsverdi på 2 214 til en maksimumsverdi på 180 416.
+summary(eu_data$gdp_pc_n3)
+
+```
+
+# Oppgave 8
+
+```{r}
+eu_data <- eu_data |>
+  mutate(
+    nc_name = case_when(
+      nc == "AL" ~ "Albania",
+      nc == "AT" ~ "Østerrike",
+      nc == "BE" ~ "Belgia",
+      nc == "BG" ~ "Bulgaria",
+      nc == "CY" ~ "Kypros",
+      nc == "CZ" ~ "Tjekkia",
+      nc == "DE" ~ "Tyskland",
+      nc == "DK" ~ "Danmark",
+      nc == "EE" ~ "Estland",
+      nc == "EL" ~ "Hellas",
+      nc == "ES" ~ "Spania",
+      nc == "FI" ~ "Finland",
+      nc == "FR" ~ "Frankrike",
+      nc == "HR" ~ "Kroatia",
+      nc == "HU" ~ "Ungarn",
+      nc == "IE" ~ "Irland",
+      nc == "IT" ~ "Italia",
+      nc == "LT" ~ "Litauen",
+      nc == "LU" ~ "Luxemburg",
+      nc == "LV" ~ "Latvia",
+      nc == "MK" ~ "Nord-Makedonia",
+      nc == "MT" ~ "Malta",
+      nc == "PL" ~ "Polen",
+      nc == "RO" ~ "Romania",
+      nc == "RS" ~ "Serbia",
+      nc == "SE" ~ "Sverige",
+      nc == "SI" ~ "Slovania",
+      nc == "SK" ~ "Slovakia",
+      nc == "TR" ~ "Tyrkia",
+      TRUE ~ NA_character_
+    )
+  )
+
+```
+
+```{r}
+eu_data |> 
+  select(nc_name, nc) |> 
+  distinct() |> 
+  print(n = 30)
+```
+
+
+# Oppgave 9
+
+```{r}
+gini_n2 <- eu_data |>
+  group_by(n2, time, n1, nc, nc_name) |> 
+  summarise(
+    gini_n2 = DescTools::Gini(gdp_pc_n3, weights = pop_n3, na.rm = TRUE),
+    pop_n2 = sum(pop_n3),
+    gdp_n2 = sum(gdp_n3),
+    gdp_pc_n2 =  gdp_n2 / pop_n2,
+    num_reg_n2 = n(),
+    .groups = "drop" 
+  ) 
+
+as_tibble(gini_n2)
+```
+
+```{r}
+gini_n2 |>
+  select(gini_n2, num_reg_n2, pop_n2, gdp_n2, gdp_pc_n2) |>
+  summary()
+
+```
+
+# Oppgave 10
+
+```{r}
+gini_low <- gini_n2 |>
+  filter(!is.na(gini_n2)) |>
+  filter(gini_n2 < 0.001)
+```
+
+```{r}
+gini_low |>
+  arrange(gini_n2) |>
+  select(nc_name, nc, n1, n2, time, gini_n2, num_reg_n2, pop_n2, gdp_pc_n2)
+
+```
+```{r}
+#Hvor mange NUTS3 soner de har
+gini_low |>
+  count(num_reg_n2, sort = TRUE)
+
+```
+Regioner med svært lav gini kjennetegnes ved at de består av få NUTS3 regioner. Vi ser at disse regionene har nettopp dette til felles. 
+
+
+
+# Oppgave 11
+
+```{r}
+gini_n1 <- eu_data |>
+  group_by(n1, time, nc, nc_name) |>
+  summarise(
+    gini_n1 = DescTools::Gini(gdp_pc_n3, weights = pop_n3, na.rm = TRUE),
+    pop_n1  = sum(pop_n3),
+    gdp_n1  = sum(gdp_n3),
+    gdp_pc_n1 = gdp_n1 / pop_n1,
+    num_reg_n1 = n(),
+    .groups = "drop"
+  )
+
+```
+
+```{r}
+gini_n1 |>
+  select(gini_n1, num_reg_n1, gdp_n1, pop_n1, gdp_pc_n1) |>
+  summary() |>
+  print(width = 76)
+
+```
+
+# Oppgave 12
+
+```{r}
+gini_nc <- eu_data |>
+  group_by(nc, time, nc_name) |>
+  summarise(
+    gini_nc = DescTools::Gini(gdp_pc_n3, weights = pop_n3, na.rm = TRUE),
+    pop_nc  = sum(pop_n3),
+    gdp_nc  = sum(gdp_n3),
+    gdp_pc_nc = gdp_nc / pop_nc,
+    num_reg_nc = n(),
+    .groups = "drop"
+  )
+
+```
+
+```{r}
+gini_nc |>
+  select(gini_nc, num_reg_nc, gdp_nc, pop_nc, gdp_pc_nc) |>
+  summary() |>
+  print(width = 80)
+
+```
+
+
+
+# Oppgave 13
+
+```{r}
+gini_n3_nest <- eu_data |> 
+  group_by(nc_name, nc) |> 
+  nest(.key = "NUTS3_data") |> 
+  ungroup()
+```
+
+# Oppgave 14
+
+```{r}
+gini_NUTS2_nest <- gini_n2 |> 
+  group_by(nc_name, nc) |> 
+  nest(.key = "NUTS2_data") |> 
+  ungroup()
+```
+
+# Oppgave 15
+
+```{r}
+gini_NUTS1_nest <- gini_n1 |> 
+  group_by(nc_name, nc) |> 
+  nest(.key = "NUTS1_data") |> 
+  ungroup()
+```
+
+# Oppgave 16
+
+```{r}
+gini_NUTSc_nest <- gini_nc |> 
+  group_by(nc_name, nc) |> 
+  nest(.key = "NUTSc_data") |> 
+  ungroup()
+```
+
+# Oppgave 17
+
+```{r}
+gini_NUTSeu_nest <- eu_data |>
+  group_by(time) |>
+  summarise(
+    gini_eu = DescTools::Gini(gdp_pc_n3, weights = pop_n3, na.rm = TRUE),
+    num_reg_eu = n(),
+    .groups = "drop"
+  )
+
+```
+
+# Oppgave 18
+
+```{r}
+gini_NUTSeu_nest |>
+  ggplot(aes(x = as.numeric(time), y = gini_eu)) +
+  geom_line() +
+  labs(
+    x = "Year",
+    y = "gini_eu"
+  ) +
+  theme_minimal()
+
+```
+
+# Oppgave 19
+
+Figuren viser at den regionale ulikheten målt ved Gini-koeffisienten på NUTS3-nivå, har hatt en fallende trend over tid. Dette kan tyde på at forskjellene mellom regioner har blitt noe mindre, og er i tråd med målsettingene bak EUs politikk. Samtidig må vi være litt kritisk til konklusjonen, ettersom utviklingen også kan påvirkes av andre faktorer som økonomiske konjunkturer, strukturelle endringer og endringer i datagrunnlaget.
+
+
+# Oppgave 20
+
+```{r}
+eu_data_nested <- gini_n3_nest |>
+  left_join(gini_NUTS2_nest, by = c("nc", "nc_name")) |>
+  left_join(gini_NUTS1_nest, by = c("nc", "nc_name")) |>
+  left_join(gini_NUTSc_nest, by = c("nc", "nc_name"))
+```
+
+```{r}
+view(eu_data_nested)
+```
+
+
+
