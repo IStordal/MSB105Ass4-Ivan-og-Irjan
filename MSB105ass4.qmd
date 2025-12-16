@@ -1312,7 +1312,6 @@ T verdien som kommer frem av testen er 3,76. Det kommer frem at dette er sigifik
 
 ```{r}
 # 1. Forbered datasettet for plm
-# før unnesting.
 panel_data <- NUTS2_diff |>
   ungroup() |> # <--- NYTT TRINN: Fjerner grupperingen.
   # Vi må eksplisitt velge nc_name nå som vi har ungroupet (hvis vi vil ha den med). 
@@ -1349,5 +1348,7 @@ Siden Fixed Effects-estimatet for koeffisienten (Estimate) ikke endres når man 
 
 Dette førte til en reduksjon i den beregnede t-verdien (fra 15.923 til 14.155).
 Selv om endringene i standardfeil og t-verdi var merkbare, var koeffisienten for diff_gdp_per_capita fortsatt ekstremt statistisk signifikant i begge tilfeller (P-verdi 2.2×10 −16). Dette indikerer at konklusjonen om sammenhengen er robust, selv når det korrigeres for heteroskedastisitet.
+
+
 
 
