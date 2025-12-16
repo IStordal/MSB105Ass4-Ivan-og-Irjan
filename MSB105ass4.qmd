@@ -663,23 +663,201 @@ gini_nc_grouped |>
   ggplot(aes(
     x = as.numeric(time),
     y = gini_nc,
-    group = nc_name
+    group = nc_name,
+    colour = nc_name
   )) +
-  geom_line(colour = "grey60", alpha = 0.8) +
-  geom_text_repel(
-    data = gini_labels,
-    aes(label = nc_name),
-    size = 3,
-    nudge_x = 0.5,
-    segment.alpha = 0.5
-  ) +
+  geom_line(alpha = 0.8) +
   facet_wrap(~ group) +
   labs(
     x = "År",
     y = "Gini-koeffisient (nasjonsnivå)",
+    colour = "Land",
     title = "Utvikling i regional ulikhet på nasjonsnivå",
     subtitle = "Land gruppert etter endring i Gini fra første observasjonsår til 2022"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "right",
+    legend.text = element_text(size = 8),
+    legend.title = element_text(size = 9)
+  )
+```
+
+# Oppgave 24
+
+
+```{r}
+gini_n2 |>
+  # Filtrer datasettet til kun å inkludere Irland
+  filter(nc_name == "Irland") |>
+  
+  ggplot(aes(
+    # Konverter tid til numerisk for x-aksen
+    x = as.numeric(time),
+    y = gini_n2,
+    # Grupper og fargelegg linjene basert på NUTS2-regionen (n2)
+    group = n2,
+    colour = n2
+  )) +
+  
+  geom_line(alpha = 0.8) +
+  
+  labs(
+    x = "År",
+    y = "Gini-koeffisient (NUTS2)",
+    colour = "NUTS2 Region",
+    title = "Utvikling i regional ulikhet for NUTS2 regioner i Irland",
+    subtitle = "Gini beregnet fra BNP per innbygger på NUTS3-nivå"
   ) +
   theme_minimal()
 ```
 
+# Oppgave 25
+
+```{r}
+gini_n2 |>
+  # Filtrer datasettet til kun å inkludere Spania
+  filter(nc_name == "Spania") |> # Spania er definert i Oppgave 8 [2, 3]
+  
+  ggplot(aes(
+    # Konverter tid til numerisk for x-aksen
+    x = as.numeric(time),
+    y = gini_n2,
+    # Grupper og fargelegg linjene basert på NUTS2-regionen (n2)
+    group = n2,
+    colour = n2
+  )) +
+  
+  geom_line(alpha = 0.8) +
+  
+  labs(
+    x = "År",
+    y = "Gini-koeffisient (NUTS2)",
+    colour = "NUTS2 Region",
+    title = "Utvikling i regional ulikhet for NUTS2 regioner i Spania",
+    subtitle = "Gini beregnet fra BNP per innbygger på NUTS3-nivå"
+  ) +
+  theme_minimal()
+```
+# Oppgave 26
+
+```{r}
+gini_n1 |>
+  # Filtrer datasettet til kun å inkludere Spania
+  filter(nc_name == "Spania") |> # Spania ble tildelt nc_name i Oppgave 8 [4]
+  
+  ggplot(aes(
+    # Konverter tid til numerisk for x-aksen
+    x = as.numeric(time),
+    y = gini_n1,
+    # Grupper og fargelegg linjene basert på NUTS1-regionen (n1)
+    group = n1,
+    colour = n1
+  )) +
+  
+  geom_line(alpha = 0.8) +
+  
+  labs(
+    x = "År",
+    y = "Gini-koeffisient (NUTS1)",
+    colour = "NUTS1 Region",
+    title = "Utvikling i regional ulikhet for NUTS1 regioner i Spania",
+    subtitle = "Gini beregnet fra BNP per innbygger på NUTS3-nivå"
+  ) +
+  theme_minimal()
+```
+
+
+
+```{r}
+gini_n1 |>
+  # Filtrer datasettet til kun å inkludere Spania
+  filter(nc_name == "Spania") |> # Spania ble tildelt nc_name i Oppgave 8 [4]
+  
+  ggplot(aes(
+    # Konverter tid til numerisk for x-aksen
+    x = as.numeric(time),
+    y = gini_n1,
+    # Grupper og fargelegg linjene basert på NUTS1-regionen (n1)
+    group = n1,
+    colour = n1
+  )) +
+  
+  geom_line(alpha = 0.8) +
+  
+  labs(
+    x = "År",
+    y = "Gini-koeffisient (NUTS1)",
+    colour = "NUTS1 Region",
+    title = "Utvikling i regional ulikhet for NUTS1 regioner i Spania",
+    subtitle = "Gini beregnet fra BNP per innbygger på NUTS3-nivå"
+  ) +
+  theme_minimal()
+```
+Som vi kan se i grafen over har flesteparten av NUTS1 regionene i Spania hatt en økt utgjevning i perioden 2000-2022. Dette er når GINI koefisienten har en nedgående trend over en årrekke. ES5 skiller seg ut da den har vist en økning i forskjell. I 2000 var GINI 0,08, og i år 2022 var den på 0,1. 
+
+# Oppgave 27
+
+
+```{r}
+gini_n2 |>
+  # Filtrer datasettet til kun å inkludere Tyskland
+  filter(nc_name == "Tyskland") |>
+  
+  ggplot(aes(
+    # Konverter tid til numerisk for x-aksen
+    x = as.numeric(time),
+    y = gini_n2,
+    # Grupper linjene basert på NUTS2-regionen (n2)
+    group = n2
+  )) +
+  
+  # Bruk en nøytral farge (f.eks. grå) for alle linjer,
+  # da det er for mange NUTS2-regioner i Tyskland til å skille dem med farger.
+  geom_line(color = "grey50", alpha = 0.8) +
+  
+  labs(
+    x = "År",
+    y = "Gini-koeffisient (NUTS2)",
+    title = "Utvikling i regional ulikhet for NUTS2 regioner i Tyskland",
+    subtitle = "Gini beregnet fra BNP per innbygger på NUTS3-nivå"
+  ) +
+  theme_minimal()
+```
+```{r}
+#Lager tabell for regioner med GINI over 0,2 for NUTS2 regioner i år 2022
+gini_n2 |>
+  # 1. Filtrer til Tyskland
+  filter(nc_name == "Tyskland") |> # Landskode DE
+  # 2. Filtrer til siste observasjonsår (2022) for konsistens
+  filter(time == "2022") |> 
+  # 3. Filtrer for regioner der Gini-koeffisienten er høyere enn 0.2
+  filter(gini_n2 > 0.2) |>
+  filter(!is.na(gini_n2)) |>
+  
+  # Velg ut relevante kolonner
+  select(n2, time, gini_n2, pop_n2, gdp_pc_n2) |> 
+  
+  # Sorter synkende etter Gini-koeffisient for å se de mest ujevne regionene først
+  arrange(desc(gini_n2)) |>
+  
+  # Formatere tall for tabellen
+  mutate(
+    gini_n2 = round(gini_n2, 4),
+    pop_n2 = round(pop_n2, 0),
+    gdp_pc_n2 = round(gdp_pc_n2, 0)
+  ) |>
+  
+  # Bruk flextable for pen visning
+  flextable() |>
+  set_header_labels(
+    n2        = "NUTS2 Region",
+    time      = "År",
+    gini_n2   = "Gini Koeffisient",
+    pop_n2    = "Befolkning (NUTS2)",
+    gdp_pc_n2 = "BNP per innbygger (NUTS2)"
+  ) |>
+  autofit()
+```
+
+I tabellen over er NUTS regionene som hadde en GINI verdi over 0,2 i 2022 filtrert ut. Dette gir en oversikt over hvilken regioner som har størst ulikhet mellom sine NUTS3 regioner. Av disse 9 reginene ligger DE21, DE25	DE23, DE24 og DE26	i  Bayern NUTS1 regionen. Dette indikerer at i Tyskland finner man størst ulikhet i den sør-østlige delen av landet. 
