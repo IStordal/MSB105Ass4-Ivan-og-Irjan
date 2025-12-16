@@ -1,6 +1,5 @@
 ---
 title: "Assignment 4"
-subtitle:  "Alternative Functional Forms and Panel Estimates"
 author: "Ivan Stordal & Irjan Vikre"
 date: last-modified
 date-format: "dddd D MMM, YYYY"
