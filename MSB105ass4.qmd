@@ -1076,7 +1076,7 @@ NUTS2_diff <- NUTS2_diff  |>
 # Oppgave 35
 
 ```{r}
-UTS2_diff <- NUTS2_diff |>
+NUTS2_diff <- NUTS2_diff |>
   group_by(nc_name, n2) |>
   mutate(
     # mod_coeff vil inneholde koeffisientene for hver av de 218 modellene
@@ -1088,4 +1088,266 @@ UTS2_diff <- NUTS2_diff |>
     )
   )
 ```
+
+# Oppgave 36
+
+```{r}
+NUTS2_diff <- NUTS2_diff  |>
+  group_by(nc_name, n2) |>
+  mutate(
+    mod_sum = bind_rows(
+      map(
+        .x = modell,
+        .f = glance
+        )
+    )
+  )
+```
+
+# Oppgave 37
+
+```{r}
+lavest_r2_n1 <- NUTS2_diff |>
+  unnest(mod_sum) |>
+  mutate(n1 = str_sub(n2, 1, 3)) |> # Lager NUTS1-kode (n1) fra NUTS2-kode (n2) [1], [2]
+  group_by(n1) |>
+  
+  # Finner minimum R^2 innenfor hver NUTS1-sone
+  summarise(
+    min_r_sq = min(r.squared, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  
+  # Sorterer synkende for å finne den NUTS1-sonen med lavest R^2
+  arrange(min_r_sq) |>
+  
+  # Viser den øverste raden (laveste R^2)
+  head(1)
+
+# Skriv ut resultatet
+print(lavest_r2_n1)
+```
+
+```{r}
+hoyest_r2_n1 <- NUTS2_diff |>
+  unnest(mod_sum) |>
+  # Lager NUTS1-kode (n1) fra NUTS2-kode (n2) [2]
+  mutate(n1 = str_sub(n2, 1, 3)) |>
+  group_by(n1) |>
+  
+  # Finner maksimum R^2 innenfor hver NUTS1-sone
+  summarise(
+    max_r_sq = max(r.squared, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  
+  # Sorterer synkende for å finne den NUTS1-sonen med høyest R^2
+  arrange(desc(max_r_sq)) |>
+  
+  # Viser den øverste raden (høyeste R^2)
+  head(1)
+
+# Skriv ut resultatet
+print(hoyest_r2_n1)
+```
+
+# Oppgave 38
+
+```{r}
+hoyest_koeffisient_n1 <- NUTS2_diff |>
+  # Un-nest for å få tak i koeffisientene
+  unnest(mod_coeff) |>
+  # Gjør NUTS2 til NUTS1
+  mutate(n1 = str_sub(n2, 1, 3)) |>
+  
+  # Beholder kun koeffisienten av interesse
+  # Kolonnenavnet er diff_gdp_per_capita fra unnesting av mod_coeff
+  rename(koeffisient = diff_gdp_per_capita) |>
+  
+  group_by(n1) |>
+  
+  # Finner maksimum av koeffisienten i hver NUTS1-sone
+  summarise(
+    max_koeffisient = max(koeffisient, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  
+  # Sorterer synkende for å identifisere den høyeste verdien
+  arrange(desc(max_koeffisient)) |>
+  
+  head(1)
+
+# Skriv ut resultatet
+print(hoyest_koeffisient_n1)
+```
+
+# Oppgave 39 
+
+```{r}
+antall_signifikante <- NUTS2_diff |>
+  group_by(nc_name, n2) |>
+  # Legger til en kolonne med koeffisientstatistikk
+  mutate(
+    koeff_stat = map(
+      .x = modell,
+      .f = broom::tidy
+    )
+  ) |>
+  # Gjør om listekolonnen til rader
+  unnest(koeff_stat) |>
+  # Velger kun koeffisienten for diff_gdp_per_capita
+  filter(term == "diff_gdp_per_capita") |>
+  # Teller de som er signifikante på 5%-nivået
+  filter(p.value < 0.05) |>
+  nrow()
+
+# Skriv ut resultatet
+print(paste("Antall signifikante koeffisienter (p < 0.05):", antall_signifikante))
+```
+162 av regionene viser et signifikant nivå 
+
+# Oppgave 40
+
+```{r}
+# Lagrer de un-nestede dataene i en midlertidig variabel for plotting.
+plot_data <- NUTS2_diff |>
+  unnest(NUTS2_diff)
+
+# Beregn gjennomsnittet av diff_gdp_per_capita fra de un-nestede dataene
+mean_diff_gdp <- mean(plot_data$diff_gdp_per_capita, na.rm = TRUE)
+```
+
+```{r}
+plot_data |>
+  ggplot(aes(x = diff_gdp_per_capita)) +
+  
+  # Legg til density plot
+  geom_density() +
+  
+  # Legg til vertikal linje ved hjelp av den ferdig beregnede verdien
+  geom_vline(
+    xintercept = mean_diff_gdp, # Bruker den forhåndsberegnede verdien
+    linetype = "dashed",
+    color = "red",
+    linewidth = 1
+  ) +
+  
+  # Legg til titler
+  labs(
+    title = "Density Plot av Endring i BNP per Innbygger",
+    x = "Årlig Endring i BNP per Innbygger (diff_gdp_per_capita)"
+  ) +
+  theme_minimal()
+```
+
+# Oppgave 41
+
+```{r}
+antall_positive_koeffisienter <- NUTS2_diff |>
+  # Henter ut koeffisientene fra list-kolonnen mod_coeff
+  unnest(mod_coeff) |>
+  # Filtrerer rader der koeffisienten er positiv
+  filter(diff_gdp_per_capita > 0) |>
+  # Teller hvor mange rader som gjenstår
+  nrow()
+
+# Skriv ut resultatet
+print(paste("Antall positive koeffisienter:", antall_positive_koeffisienter))
+```
+
+# Oppgave 42
+
+```{r}
+# 1. Henter ut koeffisientene ved å un-neste kolonnen mod_coeff
+koeffisienter_diff_gdp <- NUTS2_diff |>
+  unnest(mod_coeff) |>
+  # Filtrerer og grupperer ikke, siden vi ønsker sentraltendensen for HELE utvalget (218 modeller)
+  
+  # 2. Beregner gjennomsnitt og median
+  summarise(
+    gjennomsnitt = mean(diff_gdp_per_capita, na.rm = TRUE),
+    median = median(diff_gdp_per_capita, na.rm = TRUE)
+  )
+
+# Skriver ut resultatet
+print(koeffisienter_diff_gdp)
+```
+
+```{r}
+# 1. Un-nest koeffisientene for å få en kolonne med alle de 218 verdiene
+koeffisient_verdier <- NUTS2_diff |>
+  unnest(mod_coeff) |>
+  pull(diff_gdp_per_capita) 
+
+# 2. Beregn gjennomsnittet og medianen
+mean_val <- mean(koeffisient_verdier, na.rm = TRUE)
+median_val <- median(koeffisient_verdier, na.rm = TRUE)
+
+# 3. Formater og skriv ut resultatene (Bruker digits = 1 for å unngå feilen)
+print(paste("Mean:", format(mean_val, scientific = TRUE, digits = 1)))
+print(paste("Median:", format(median_val, scientific = TRUE, digits = 1)))
+```
+# Oppgave 43
+
+```{r}
+# 1. Hent ut koeffisientene i en vektor
+koeffisient_verdier <- NUTS2_diff |>
+  unnest(mod_coeff) |>
+  pull(diff_gdp_per_capita) 
+
+# 2. Utfør t-testen:
+# - data: koeffisient_verdier
+# - mu = 0: tester mot null
+# - alternative = "greater": tester om gjennomsnittet er signifikant > 0
+t.test(
+  koeffisient_verdier, 
+  mu = 0, 
+  alternative = "greater"
+)
+```
+
+T verdien som kommer frem av testen er 3,76. Det kommer frem at dette er sigifikant høyere enn 0. 
+
+# Oppgave 44
+
+```{r}
+# 1. Forbered datasettet for plm
+# før unnesting.
+panel_data <- NUTS2_diff |>
+  ungroup() |> # <--- NYTT TRINN: Fjerner grupperingen.
+  # Vi må eksplisitt velge nc_name nå som vi har ungroupet (hvis vi vil ha den med). 
+  # Men siden den originale kilde-syntaxen kun brukte n2, følger vi det, men 
+  # inkluderer n3 (som blir eksponert) og time.
+  select(n2, NUTS2_diff) |> 
+  unnest(NUTS2_diff)   
+```
+
+```{r}
+# 2. Utfør panel-regresjonen ved hjelp av plm()
+p_mod <- plm(
+  formula = diff_gini_nuts2 ~ diff_gdp_per_capita,
+  data = panel_data,
+  # Definerer panelets struktur: Individ (n3) og Tid (time)
+  index = c("n3", "time")
+)
+```
+
+# Oppgave 45
+
+```{r}
+summary(p_mod)
+```
+
+I denne analysen finner vi en positiv sammenheng mellom økt økonomisk vekst og ulikhet, Til tross for svært signifikante resultat, har vi en ganske lav forklaringskraft, ettersom R2 verdi bare er 0,009. 
+
+# Oppgave 46
+
+I den alternative summery modellen blir en spesifikk kovariasjon matrise anvendt til å beregne standardfeil for koefisentene. Målet med denne fremgangsmåten er å sikre at t-verdiene og P-verdiene er gyldige, selv om modellen skulle lide av heteroskedastisitet, som er et vanlig problem i paneldata. 
+
+Siden Fixed Effects-estimatet for koeffisienten (Estimate) ikke endres når man korrigerer for heteroskedastisitet, forblir effekten av diff_gdp_per_capita uendret. Imidlertid endres standardfeilene, t-verdiene og F-statistikken.
+
+
+Dette førte til en reduksjon i den beregnede t-verdien (fra 15.923 til 14.155).
+Selv om endringene i standardfeil og t-verdi var merkbare, var koeffisienten for diff_gdp_per_capita fortsatt ekstremt statistisk signifikant i begge tilfeller (P-verdi 2.2×10 −16). Dette indikerer at konklusjonen om sammenhengen er robust, selv når det korrigeres for heteroskedastisitet.
+
 
