@@ -861,3 +861,231 @@ gini_n2 |>
 ```
 
 I tabellen over er NUTS regionene som hadde en GINI verdi over 0,2 i 2022 filtrert ut. Dette gir en oversikt over hvilken regioner som har størst ulikhet mellom sine NUTS3 regioner. Av disse 9 reginene ligger DE21, DE25	DE23, DE24 og DE26	i  Bayern NUTS1 regionen. Dette indikerer at i Tyskland finner man størst ulikhet i den sør-østlige delen av landet. 
+
+# Oppgave 28
+
+```{r}
+eu_data_nested |>
+  unnest(NUTS1_data) |>
+  filter(nc_name == "Tyskland") |>
+  filter(time == "2022") |>
+  select(n1, gini_n1, num_reg_n1) |>
+  arrange(desc(gini_n1)) |>
+  flextable() |>
+  line_spacing(space = 0.3) |>
+  colformat_double(j = 2, digits = 4
+  )
+```
+
+Når vi sammenligner data på NUTS1 nivå med de vi fant på NUTS2 nivå kan vi se lignende trender i en stor spredning i ulket. GINI koefisienten varier fra 0,097 til 0,253 mellom regionene med mest og minst ulikhet. 
+
+# Oppgave 29
+
+```{r}
+gini_n1 |>
+  # Filtrer datasettet til kun å inkludere Frankrike (FR)
+  filter(nc_name == "Frankrike") |>
+  
+  ggplot(aes(
+    # Konverter tid til numerisk for x-aksen
+    x = as.numeric(time),
+    y = gini_n1,
+    # Grupper linjene basert på NUTS1-regionen (n1)
+    group = n1,
+    # Fargekod linjene basert på NUTS1-regionen
+    colour = n1
+  )) +
+  
+  geom_line(alpha = 0.8, linewidth = 1) +
+  
+  labs(
+    x = "År",
+    y = "Gini-koeffisient (NUTS1)",
+    colour = "NUTS1 Region",
+    title = "Utvikling i regional ulikhet for NUTS1 regioner i Frankrike",
+    subtitle = "Gini beregnet fra BNP per innbygger på NUTS3-nivå"
+  ) +
+  theme_minimal() +
+  # Juster legendeposisjonen for å optimalisere plottet
+  theme(legend.position = "bottom")
+```
+
+# oppgave 30
+
+```{r}
+gini_n1 |>
+  # 1. Filtrer til Frankrike
+  filter(nc_name == "Frankrike") |> # Landskode FR
+  # 2. Filtrer til siste observasjonsår (2022)
+  filter(time == "2022") |> 
+  
+  # Velg ut relevante kolonner
+  select(n1, gini_n1, num_reg_n1, pop_n1) |> 
+  
+  # Sorter synkende etter Gini-koeffisient for å se de mest ujevne regionene først
+  arrange(desc(gini_n1)) |>
+  
+  # Velg de 6 øverste (høyest Gini)
+  head(6) |>
+  
+  # Formatere tall for tabellen
+  mutate(
+    gini_n1 = round(gini_n1, 4),
+    pop_n1 = round(pop_n1, 0)
+  ) |>
+  
+  # Bruk flextable for pen visning
+  flextable() |>
+  set_header_labels(
+    n1        = "NUTS1 Region",
+    gini_n1   = "Gini Koeffisient (2022)",
+    num_reg_n1 = "Antall NUTS3-regioner",
+    pop_n1    = "Befolkning (NUTS1)"
+  ) |>
+  autofit()
+```
+Regionen FR1 har en Gini-koeffisient på 0.3354, som er surevent høyere enn den nest høyeste regionen, FRL (0.2018)
+
+Den sonen som opplever størst ulikhet er ile de france, som er sentrert rundt Paris området. Dette tilsier at områdene med støsrt ulikhet er rundt Frankrikes hovedstad. 
+
+# Oppgave 31
+
+```{r}
+FR1_data <- eu_data_nested |>
+  unnest(NUTS3_data) |> # Henter ut NUTS3-dataene
+  filter(n1 == "FR1")
+
+# Linediagram
+FR1_data |>
+  ggplot(aes(
+    # Konverter tid til numerisk for x-aksen
+    x = as.numeric(time),
+    y = gdp_pc_n3,
+    # Grupper og fargekod linjene basert på NUTS3-regionen (n3)
+    group = n3,
+    colour = n3
+  )) +
+  
+  geom_line(linewidth = 1) +
+  
+  # Legger til tekstetiketter for siste år for å identifisere regionene
+  geom_text_repel(
+    data = FR1_data |> filter(time == max(time)),
+    aes(label = n3),
+    size = 3,
+    nudge_x = 0.5,
+    segment.alpha = 0.5
+  ) +
+  
+  labs(
+    x = "År",
+    y = "BNP per innbygger (NUTS3)",
+    title = "Utvikling i BNP per innbygger for NUTS3 regioner i FR1 (Île-de-France)",
+    subtitle = "Gini (FR1, 2022) var 0.3354"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")
+```
+
+```{r}
+# Tabell 
+FR1_data |>
+  filter(time == "2022") |>
+  select(n3, time, gdp_pc_n3, pop_n3) |>
+  
+  # Sorter synkende etter BNP per innbygger
+  arrange(desc(gdp_pc_n3)) |>
+  
+  # Velg de 6 øverste sonene
+  head(6) |>
+  
+  # Formatere tall for tabellen
+  mutate(
+    gdp_pc_n3 = round(gdp_pc_n3, 0),
+    pop_n3 = round(pop_n3, 0)
+  ) |>
+  
+  # Bruk flextable for pen visning
+  flextable() |>
+  set_header_labels(
+    n3        = "NUTS3 Region",
+    time      = "År",
+    gdp_pc_n3 = "BNP per innbygger (2022)",
+    pop_n3    = "Befolkning (NUTS3)"
+  ) |>
+  autofit()
+```
+
+#Oppgave 32
+
+I disse illustrasjonene kan vi se at det er to NUTS3 regioner som bidrar til FR1 sin høye GINI verdi. FR101 og FR105 skiller seg kraftig ut fra de andre NUTS3 regionene, med omtrent 3 ganger så mye som den tredje på listen. FR101 er NUTS3 regionen til Paris, mens FR105 er Seine-et-Marne, som er et departemeant øst for Paris. Det tyder sterkt på at ulikhet i og rundt hovedstaden er hovedårsaken til FR1 sin høye grad av ulikhet. 
+
+#Oppgave 33
+
+```{r}
+n3_data <- eu_data_nested |>
+ unnest(NUTS3_data) |>
+ select(nc_name, n2, n3, time, gdp_pc_n3)
+
+```
+
+```{r}
+n2_data <- eu_data_nested |>
+ unnest(NUTS2_data) |>
+ select(nc_name, n2, time, gini_n2)
+
+```
+
+
+```{r}
+NUTS2_diff <- n3_data |>
+ left_join(n2_data, by = join_by(nc_name, n2, time)) |>
+ mutate(
+ diff_gdp_per_capita = c(NA, 100 * diff(gdp_pc_n3)),
+ diff_gini_nuts2 = c(NA, 100 * diff(gini_n2))
+ ) %>%
+ filter(complete.cases(.)) |>
+ group_by(nc_name, n2) |>
+ nest(.key = "NUTS2_diff")
+```
+
+```{r}
+unnest(NUTS2_diff, NUTS2_diff) |>
+ ungroup() |>
+ filter(!is.nan(gini_n2)) |>
+ select(n2) |>
+ distinct() |>
+ nrow()
+```
+
+# Oppgave 34
+
+```{r}
+NUTS2_diff <- NUTS2_diff  |> 
+  group_by(nc_name, n2) |> 
+  mutate(
+    # 'modell' er den nye listekolonnen som skal lagre de 218 regresjonsmodellene
+    modell = map(
+      .x = NUTS2_diff,
+      # Anonym funksjon som kjører lm på de nestede dataene i 'a_df'
+      .f = function(a_df) lm('diff_gini_nuts2 ~ diff_gdp_per_capita', data = a_df)
+    )
+  )
+```
+
+# Oppgave 35
+
+```{r}
+UTS2_diff <- NUTS2_diff |>
+  group_by(nc_name, n2) |>
+  mutate(
+    # mod_coeff vil inneholde koeffisientene for hver av de 218 modellene
+    mod_coeff = bind_rows(
+      map(
+        .x = modell,
+        .f = coefficients
+      )
+    )
+  )
+```
+
