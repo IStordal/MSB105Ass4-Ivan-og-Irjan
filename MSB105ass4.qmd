@@ -556,4 +556,130 @@ view(eu_data_nested)
 ```
 
 
+# Oppgave 21
+
+```{r}
+gini_nc_label <- gini_nc |> 
+  filter(!is.na(gini_nc)) |> 
+  group_by(nc_name) |> 
+  filter(time == max(time)) |> 
+  ungroup()
+
+gini_nc |> 
+  filter(!is.na(gini_nc)) |> 
+  ggplot(aes(
+    x = as.numeric(time),
+    y = gini_nc,
+    group = nc_name
+  )) +
+  geom_line(colour = "grey60", alpha = 0.8) +
+  geom_text_repel(
+    data = gini_nc_label,
+    aes(label = nc_name),
+    size = 3,
+    nudge_x = 0.5,
+    segment.alpha = 0.5
+  ) +
+  labs(
+    x = "År",
+    y = "Gini-koeffisient (nasjonsnivå)",
+    title = "Utvikling i regional ulikhet på nasjonsnivå",
+    subtitle = "Gini beregnet fra BNP per innbygger på NUTS3-nivå"
+  ) +
+  theme_minimal()
+```
+
+# Oppgave 22
+
+
+```{r}
+# Lager en tabell som viser GINI på nasjonlt nivå for året 2022, sortert fra lav til høy ulikhet
+gini_nc |> 
+  filter(time == "2022") |> 
+  filter(!is.na(gini_nc)) |> 
+  select(
+    nc_name,
+    gini_nc,
+    num_reg_nc,
+    gdp_pc_nc
+  ) |> 
+  arrange(gini_nc) |> 
+  mutate(
+    gini_nc = round(gini_nc, 3),
+    gdp_pc_nc = round(gdp_pc_nc, 0)
+  ) |> 
+  flextable() |> 
+  set_header_labels(
+    nc_name   = "Land",
+    gini_nc   = "Gini (2022)",
+    num_reg_nc = "Antall NUTS3-regioner",
+    gdp_pc_nc = "BNP per innbygger"
+  ) |> 
+  autofit()
+```
+
+
+# Oppgave 23
+
+```{r}
+gini_groups <- gini_nc |> 
+  filter(!is.na(gini_nc)) |> 
+  group_by(nc, nc_name) |> 
+  summarise(
+    gini_first = gini_nc[which.min(as.numeric(time))],
+    gini_2022  = gini_nc[time == "2022"][1],
+    .groups = "drop"
+  ) |> 
+  filter(!is.na(gini_2022)) |> 
+  mutate(
+    group = case_when(
+      gini_2022 < gini_first ~ "Utjevning over tid",
+      gini_2022 > gini_first ~ "Økt regional ulikhet",
+      TRUE ~ NA_character_
+    )
+  )
+```
+
+
+```{r}
+gini_nc_grouped <- gini_nc |> 
+  left_join(
+    gini_groups |> select(nc, group),
+    by = "nc"
+  ) |> 
+  filter(!is.na(group))
+```
+
+l
+
+```{r}
+gini_labels <- gini_nc_grouped |> 
+  filter(time == "2022")
+```
+
+
+```{r}
+gini_nc_grouped |> 
+  ggplot(aes(
+    x = as.numeric(time),
+    y = gini_nc,
+    group = nc_name
+  )) +
+  geom_line(colour = "grey60", alpha = 0.8) +
+  geom_text_repel(
+    data = gini_labels,
+    aes(label = nc_name),
+    size = 3,
+    nudge_x = 0.5,
+    segment.alpha = 0.5
+  ) +
+  facet_wrap(~ group) +
+  labs(
+    x = "År",
+    y = "Gini-koeffisient (nasjonsnivå)",
+    title = "Utvikling i regional ulikhet på nasjonsnivå",
+    subtitle = "Land gruppert etter endring i Gini fra første observasjonsår til 2022"
+  ) +
+  theme_minimal()
+```
 
