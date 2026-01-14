@@ -3,7 +3,6 @@ title: "Assignment 4"
 author: "Ivan Stordal & Irjan Vikre"
 date: last-modified
 date-format: "dddd D MMM, YYYY"
-csl: hvl_apa7_stil_bokmal_v1
 lang: en-GB
 format:
   html: default
@@ -65,6 +64,7 @@ gdp_tabs |>
 ```
 
 ```{r}
+#| cache: true
 # description nama_10r_3gdp
 dsd_gdp <- get_eurostat_dsd("nama_10r_3gdp")
 ```
@@ -115,6 +115,7 @@ dim(gdp)
 ```
 
 ```{r}
+#| paged.print: false
 gdp
 ```
 
@@ -163,13 +164,22 @@ pop_tab <- toc_txt |>
 
 # Oppgave 2
 ## i
+
 ```{r}
 pop_tab |>
   filter(
     str_detect(title, regex("population", ignore_case = TRUE)) &
     str_detect(title, regex("NUTS\\s*3", ignore_case = TRUE))
-  )
-
+  ) |> 
+  select(-type, -lastModified) |> 
+  flextable() |> 
+  set_header_labels(
+    lastUpdate = "last\nUpdate",
+    dataStart = "data\nStart",
+    dataEnd = "data\nEnd"
+  ) |> 
+  autofit() |> 
+  width(j =1, width = 2)
 ```
 
 ```{r}
@@ -217,7 +227,163 @@ dim(pop)
 ```
 
 ```{r}
+#| eval: false
+# ag: har ikke så lyst til å se over 30000 rekker med befolkningsdata
+# fra eu. Har derfor satt eval lik false. Et enkelt alternativ er å benytte paged.print: false
+# kan også settes i setup chunk vha: options(paged.print = FALSE)
 pop
+```
+
+```{r}
+#| paged.print: false
+pop
+```
+
+
+```{r}
+#| message: false
+#| label: tbl-pop-first120
+#| tbl-cap: First 126 observations in pop
+# ag: ikke så smart å printe alle 30000
+# ag: Kode som viser hvordan vi kan få til to kompakte tabeller som viser dataene for
+# Albania. Selv dette tar to sider og er ikke veldig spennende lesning ;-)
+pop |> 
+  head(n = 126) %>%
+  {
+    list(
+      p1 = slice(., 1:42),
+      p2 = slice(., 43:84),
+      p3 = slice(., 85:126)
+    )
+  } |> 
+  bind_cols() |> 
+  flextable() |>
+  set_table_properties(
+    opts_pdf = list(
+      arraystretch = 1.2,
+      float = 'float'
+      )
+    ) |> 
+  set_header_labels(
+    geo...1 = "NUTS3",
+    time...2 = "År",
+    pop_n3...3 = "Befolkning\nNUTS3",
+    geo...4 = "NUTS3",
+    time...5 = "År",
+    pop_n3...6 = "Befolkning\nNUTS3",  
+    geo...7 = "NUTS3",
+    time...8 = "År",
+    pop_n3...9 = "Befolkning\nNUTS3"
+  ) |> 
+  line_spacing(space = 0.1)  |> 
+  fontsize(size = 9, part = "all") |> 
+  align(j = c(3, 6, 9), align = "left", part = "all") |> 
+  autofit()
+```
+
+```{r}
+#| message: false
+#| label: tbl-pop-next126
+#| tbl-cap: Next 126 observations in pop (the rest of Albania).
+# ag: ikke så smart å printe alle 30000. Tror det holder lenge
+# med disse 252 observasjonene
+pop |> 
+  _[127:252,] %>%
+  {
+    list(
+      p1 = slice(., 1:42),
+      p2 = slice(., 43:84),
+      p3 = slice(., 85:126)
+    )
+  } |> 
+  bind_cols() |> 
+  flextable() |>
+  set_table_properties(
+    opts_pdf = list(
+      arraystretch = 1.2,
+      float = 'float'
+      )
+    ) |> 
+  set_header_labels(
+    geo...1 = "NUTS3",
+    time...2 = "År",
+    pop_n3...3 = "Befolkning\nNUTS3",
+    geo...4 = "NUTS3",
+    time...5 = "År",
+    pop_n3...6 = "Befolkning\nNUTS3",  
+    geo...7 = "NUTS3",
+    time...8 = "År",
+    pop_n3...9 = "Befolkning\nNUTS3"
+  ) |> 
+  line_spacing(space = 0.1)  |> 
+  fontsize(size = 9, part = "all") |> 
+  align(j = c(3, 6, 9), align = "left", part = "all") |> 
+  autofit()
+
+```
+
+
+```{r}
+#| label: tbl-six-zones
+#| tbl-cap: Table of GDP data for six random NUTS3 zones in the dataset.
+#| message: false
+# ag: det er over 30000 observasjoner. Ingen god ide å printe alle 
+# disse i dokumentet. Et alternativ kan være å plukke ut f.eks 6 NUTS3
+# soner og presentere disse
+{
+  set.seed(13012026)
+  nuts3_sample <- gdp |> 
+    arrange(geo, time) %>% 
+    select(geo) |> 
+    distinct() |> 
+    pull() |> 
+    sample(size = 6, replace = FALSE)
+
+# ag: stor tabell. Notorisk vanskelig å få fint formatert
+# særlig for flere format. Her er mitt forsøk.
+gdp |> 
+  filter(geo %in% nuts3_sample) |> 
+  arrange(geo, time) %>% 
+  mutate(gdp_n3 = gdp_n3/1000) |> 
+  complete(geo, time, fill = list(NA)) %>% 
+  {
+    list(
+      p1 = slice(., 1:48),
+      p2 = slice(., 49:96),
+      p3 = slice(., 97:144)
+    )
+  } |> 
+  bind_cols() |> 
+  flextable() |> 
+  set_table_properties(
+    opts_pdf = list(
+      arraystretch = 1.2,
+      float = 'float'
+      )
+    ) |> 
+  fontsize(size = 7, part = "all") |> 
+  line_spacing(space = 0.3, part = "body") |> 
+  line_spacing(space = 1.1, part = "header") |> 
+  colformat_double(big.mark = " ", digits = 0) |> 
+  bold(i = c(1,25)) |> 
+  align(j = c(3, 6, 9), align = "left", part = "header") |> 
+  align(j = c(3, 6, 9), align = "center", part = "body") |> 
+  vline(j = c(3,6)) |> 
+  set_header_labels(
+    geo...1 = "nuts3",
+    time...2 = "År",
+    gdp_n3...3 = "GDP\nin €1000",
+    geo...4 = "nuts3",
+    time...5 = "År",
+    gdp_n3...6 = "GDP\nin €1000",
+    geo...7 = "nuts3",
+    time...8 = "År",
+    gdp_n3...9 = "GDP\nin €1000"
+  ) |> 
+  width(j = c(1, 4, 7), width = 0.45) |> 
+  width(j = c(2, 5, 8), width = 0.2) |> 
+  width(j = c(3, 6, 9), width = 0.5)
+}
 ```
 
 # Oppgave 3
@@ -232,7 +398,11 @@ gdp_pop <- left_join(
 
 ```{r}
 dim(gdp_pop)
-head(gdp_pop)
+```
+
+```{r}
+head(gdp_pop) |> 
+  flextable()
 ```
 
 
@@ -293,8 +463,8 @@ eu_data <- eu_data |>
 eu_data |>
   select(n3, n2, n1, nc) |>
   distinct() |>
-  head(10)
-
+  head(10) |> 
+  flextable()
 ```
 
 
@@ -310,14 +480,60 @@ eu_data |>
 
 
 # Oppgave 6
+
 ```{r}
 eu_data |>
   distinct(nc, n3) |>
-  count(nc, name = "num_nuts3") |>
-  arrange(nc) |> 
-  
-as_flextable()
+  group_by(nc) |> 
+  summarise(
+    Antall = n()
+  ) |> 
+  arrange(desc(Antall)) |> 
+  flextable()
 ```
+
+```{r}
+#| message: false
+eu_data |>
+  select(nc, n3) |> # Henter ut de variablene vi trenger
+  distinct() |> # Fjerner duplikater 
+  group_by(nc) |> # Grupperer per land
+  summarise(
+    num_nuts3 = n(),
+    .groups = "drop"
+  ) |>
+  arrange(desc(num_nuts3)) %>%
+  # legger til 3 tomme rekker for å få 32
+  add_row(
+    nc = rep(NA, 3), 
+    num_nuts3 = rep(NA, 3)) %>% 
+  {
+    list(
+      s1 = slice(., 1:8),
+      s2 = slice(., 9:16),
+      s3 = slice(., 17:24),
+      s4 = slice(., 25:32)
+    )
+  } |> 
+  bind_cols() |> 
+  flextable() |> 
+  fontsize(size = 9, part = "all") |> 
+  line_spacing(space = 0.85) |> 
+  set_header_labels(
+    nc...1 = "Land",
+    num_nuts3...2 = "Antall\nnuts3\nregioner",
+    nc...3 = "Land",
+    num_nuts3...4 = "Antall\nnuts3\nregioner",
+    nc...5 = "Land",
+    num_nuts3...6 = "Antall\nnuts3\nregioner",
+    nc...7 = "Land",
+    num_nuts3...8 = "Antall\nnuts3\nregioner"
+  ) |> 
+  padding(j = c(2, 4, 6, 8), padding.right = 30, part = "all") |> 
+  align(j = c(2, 4, 6, 8), align = "center", part = "all") |> 
+  width(j = c(1, 3, 5, 7), width = 0.4)
+```
+
 # Oppgave 7
 
 ```{r}
@@ -551,6 +767,7 @@ eu_data_nested <- gini_n3_nest |>
 ```
 
 ```{r}
+#| eval: false
 view(eu_data_nested)
 ```
 
