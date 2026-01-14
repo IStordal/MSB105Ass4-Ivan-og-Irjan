@@ -1,0 +1,20 @@
+---
+title: "ag comments"
+format: html
+---
+
+## Generelle kommentarer
+
+-   Dere har ingen bibliography her så da kan cls: med fordel droppes fra YAMl. Ellers får typst problemer.
+-  La inn chache:true for henting av gdp data (eller var det pop data?)
+-   Dere prøver egentlig å printe hele gdp og pop til skjerm. Ikke lurt. En løsning er å bruke `paged.print: false` for å få tibble console output med maks 10 rekker.
+-   Alternativ løsning er å lage kompakte tabeller med deler av datene. Jeg har lagt inn eksempler på en slik løsning. Merk bruken av:
+    - `set_table_ properties(opts_pdf = list(arraystrech = 1.0))` eneste besvergelsen jeg har funnet som faktisk gir tabeller i pdf (latex) uten ekstremt stor avstand mellom linjene.
+    - Se bruk av konstruksjonen `{list(s1 = slice(., 1:5), s2 = slice(., 6:10))} |>  bind_cols()` får å kutte en tibble i pipen opp i like lange biter og så lime dem sammen igjen horisontalt. Dette gir oss muligheten til å lage mer kompakte tabeller.
+    - Se også bruken av `add_row()` for å legge til tomme rekker til en tibble. Dette for å få et antall som er lettere å splitte opp. F.eks 29 + 3 tomme = 32 = 4 * 8
+-   Et bra arbeid. Nå kan dere å hente inn og bearbeide et relativt stort datasett effektivt.
+
+
+
+
+
